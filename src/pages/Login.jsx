@@ -16,7 +16,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login({ email, password });
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg =
@@ -33,11 +33,15 @@ export default function Login() {
   return (
     <div className="lmw-screen">
       <div className="lmw-container">
-        <div className="lmw-logo">
-          {/* tu icono */}
-          <span role="img" aria-label="home">🏠</span>
+        <div className="lmw-logo-img">
+          <img
+           src="/brand/logo-smart.png"
+           alt="Smart Condominium"
+           width={88}
+           height={88}
+           />
         </div>
-
+        
         <h1 className="lmw-title">Bienvenido</h1>
         <p className="lmw-subtitle">Inicie sesión para acceder a su cuenta</p>
 

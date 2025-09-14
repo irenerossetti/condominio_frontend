@@ -1,17 +1,20 @@
+// src/services/users.js
 import { api } from "../api";
 
 export async function listUsers(params = {}) {
-  const { data } = await api.get("users/", { params });
-  return data;
+  const r = await api.get("users/", { params });
+  return r.data;
 }
+
 export async function createUser(payload) {
-  const { data } = await api.post("users/", payload);
-  return data;
+  const r = await api.post("users/", payload);
+  return r.data;
 }
 export async function updateUser(id, payload) {
-  const { data } = await api.patch(`users/${id}/`, payload);
-  return data;
+  const r = await api.put(`users/${id}/`, payload);
+  return r.data;
 }
 export async function deleteUser(id) {
-  await api.delete(`users/${id}/`);
+  const r = await api.delete(`users/${id}/`);
+  return r.data;
 }

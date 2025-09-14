@@ -1,106 +1,196 @@
+// src/pages/Fees.jsx
 import { useEffect, useState } from "react";
-import { listExpenseTypes } from "../services/expenseTypes";
-import { issueFees, listFees, listMyFees, payFee } from "../services/fees";
+import { fetchMe } from "../services/me";
+import {
+  listExpenseTypes,
+  listFees,      // GET /api/fees/?period=YYYY-MM
+  listMyFees,    // GET /api/me/fees/
+  issueFees,     // POST /api/fees/issue/
+  payFee,        // POST /api/fees/:id/pay/
+} from "../services/fees";
 
 export default function Fees() {
-  const [ets, setEts] = useState([]);
+  // ---- sesión / rol
+  const [me, setMe] = useState(null);
+  useEffect(() => { fetchMe().then(setMe).catch(() => {}); }, []);
+  const isAdmin = me?.profile?.role === "ADMIN";
+
+  // ---- filtros / form
   const [period, setPeriod] = useState("");
   const [expenseType, setExpenseType] = useState("");
   const [amount, setAmount] = useState("");
-  const [adminList, setAdminList] = useState([]);
-  const [myList, setMyList] = useState([]);
+
+  // ---- data
+  const [types, setTypes] = useState([]);
+  const [issued, setIssued] = useState([]);
+  const [mine, setMine] = useState([]);
   const [msg, setMsg] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const etData = await listExpenseTypes({ active: true });
-        setEts(etData.results || etData);
-        const mine = await listMyFees();
-        setMyList(mine.results || mine);
-      } catch {}
-    })();
-  }, []);
+  async function loadTypes() {
+    const data = await listExpenseTypes();
+    setTypes(data.results || data);
+  }
+  async function loadIssued(p) {
+    if (!p) { setIssued([]); return; }
+    const data = await listFees({ period: p });
+    setIssued(data.results || data);
+  }
+  async function loadMine() {
+    const data = await listMyFees();
+    setMine(data.results || data);
+  }
+
+  useEffect(() => { loadTypes(); loadMine(); }, []);
+  useEffect(() => { loadIssued(period); }, [period]);
 
   async function onIssue(e) {
     e.preventDefault();
     setMsg("");
     try {
-      const payload = { period };
-      if (expenseType) payload.expense_type = expenseType;
-      if (amount) payload.amount = Number(amount);
-      const r = await issueFees(payload);
-      setMsg(`Cuotas emitidas: ${r.count} para ${r.period}`);
-      const all = await listFees({ period });
-      setAdminList(all.results || all);
-    } catch (e) {
-      console.error(e);
+      await issueFees({
+        period,
+        expense_type: expenseType || undefined,
+        amount: amount || undefined,
+      });
+      setMsg(`Cuotas emitidas${period ? `: ${period}` : ""}`);
+      await loadIssued(period);
+      await loadMine();
+    } catch {
       setMsg("Error al emitir cuotas");
     }
   }
 
-  async function onPay(feeId) {
-    const monto = prompt("Monto a registrar:");
-    if (!monto) return;
-    try { await payFee(feeId, { amount: Number(monto) }); alert("Pago registrado"); }
-    catch { alert("No se pudo registrar el pago"); }
+  async function onPay(fee) {
+    const val = prompt("Monto a registrar:", fee.amount);
+    if (!val) return;
+    try {
+      await payFee(fee.id, { amount: parseFloat(val) });
+      await loadIssued(period);
+      await loadMine();
+    } catch {
+      alert("No se pudo registrar el pago");
+    }
   }
 
   return (
-    <div style={{ padding: 24, display: "grid", gap: 16 }}>
+    <div style={{ padding: 24, display: "grid", gap: 24 }}>
       <h1>Cuotas</h1>
 
-      <section style={{ border: "1px solid #eee", borderRadius: 12, padding: 16 }}>
-        <h3>Emitir cuotas (ADMIN)</h3>
-        <form onSubmit={onIssue} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input placeholder="Periodo YYYY-MM" value={period} onChange={(e)=>setPeriod(e.target.value)} />
-          <select value={expenseType} onChange={(e)=>setExpenseType(e.target.value)}>
-            <option value="">— Cualquier tipo activo —</option>
-            {ets.map(et => <option key={et.id} value={et.id}>{et.name} (def: {et.amount_default})</option>)}
-          </select>
-          <input placeholder="Monto (opcional)" value={amount} onChange={(e)=>setAmount(e.target.value)} />
-          <button>Emitir</button>
-          {msg && <span style={{ color: "#0a7", fontWeight: 600 }}>{msg}</span>}
-        </form>
+      {/* ---------- SOLO ADMIN: emitir cuotas ---------- */}
+      {isAdmin && (
+        <section
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: 16,
+            background: "#fafafa",
+          }}
+        >
+          <h3>Emitir cuotas (ADMIN)</h3>
+          <form
+            onSubmit={onIssue}
+            style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}
+          >
+            <input
+              type="month"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              placeholder="Periodo YYYY-MM"
+            />
+            <select value={expenseType} onChange={(e) => setExpenseType(e.target.value)}>
+              <option value="">Cualquier tipo activo</option>
+              {types.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                  {t.amount_default ? ` (def: ${Number(t.amount_default).toFixed(2)})` : ""}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Monto (opcional)"
+            />
+            <button>Emitir</button>
+          </form>
 
-        {!!adminList.length && (
-          <div style={{ marginTop: 10 }}>
-            <h4>Cuotas emitidas en {period}</h4>
-            <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
-              <thead><tr><th>Unidad</th><th>Propietario</th><th>Tipo</th><th>Periodo</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
-              <tbody>
-                {adminList.map(f => (
-                  <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td>{f.unit_code}</td>
-                    <td>{f.owner_username}</td> {/* nuevo */}
-                    <td>{f.expense_type_name}</td>
-                    <td>{f.period}</td>
-                    <td>{f.amount}</td>
-                    <td>{f.status}</td>
-                    <td><button onClick={() => onPay(f.id)}>Registrar pago</button></td>
+          {msg && (
+            <div style={{ marginTop: 8, color: msg.startsWith("Error") ? "#b91c1c" : "#059669" }}>
+              {msg}
+            </div>
+          )}
+
+          {period && (
+            <>
+              <h4 style={{ marginTop: 16 }}>Cuotas emitidas en {period}</h4>
+              <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f4f4f4" }}>
+                    <th>Unidad</th>
+                    <th>Propietario</th>
+                    <th>Tipo</th>
+                    <th>Periodo</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {issued.map((f) => (
+                    <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
+                      <td>{f.unit?.code}</td>
+                      <td>{f.unit_owner_username || f.unit?.owner_username}</td>
+                      <td>{f.expense_type?.name}</td>
+                      <td>{f.period}</td>
+                      <td>{Number(f.amount).toFixed(2)}</td>
+                      <td>{f.status}</td>
+                      <td>
+                        <button onClick={() => onPay(f)}>Registrar pago</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!issued.length && (
+                    <tr>
+                      <td colSpan={7}>Sin cuotas.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
+        </section>
+      )}
 
+      {/* ---------- CU8: Mi estado de cuenta ---------- */}
       <section>
         <h3>Mi estado de cuenta (CU8)</h3>
         <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
-          <thead><tr><th>Unidad</th><th>Tipo</th><th>Periodo</th><th>Monto</th><th>Estado</th></tr></thead>
+          <thead>
+            <tr style={{ background: "#f4f4f4" }}>
+              <th>Unidad</th>
+              <th>Tipo</th>
+              <th>Periodo</th>
+              <th>Monto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
           <tbody>
-            {myList.map(f => (
+            {mine.map((f) => (
               <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{f.unit_code}</td>
-                <td>{f.expense_type_name}</td>
+                <td>{f.unit?.code}</td>
+                <td>{f.expense_type?.name}</td>
                 <td>{f.period}</td>
-                <td>{f.amount}</td>
+                <td>{Number(f.amount).toFixed(2)}</td>
                 <td>{f.status}</td>
               </tr>
             ))}
-            {!myList.length && <tr><td colSpan="5">Sin cuotas</td></tr>}
+            {!mine.length && (
+              <tr>
+                <td colSpan={5}>Sin cuotas</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

@@ -1,20 +1,17 @@
+// src/services/fees.js
 import { api } from "../api";
 
-export async function listFees(params = {}) {
-  const { data } = await api.get("fees/", { params });
-  return data;
-}
-export async function issueFees(payload) {
-  // { period: "YYYY-MM", expense_type?, amount? }
-  const { data } = await api.post("fees/issue/", payload);
-  return data;
-}
-export async function payFee(id, payload) {
-  // { amount, method?, note? }
-  const { data } = await api.post(`fees/${id}/pay/`, payload);
-  return data;
-}
-export async function listMyFees(params = {}) {
-  const { data } = await api.get("fees/", { params: { ...params, mine: 1 } });
-  return data;
-}
+export const listExpenseTypes = () =>
+  api.get("expense-types/").then(r => r.data); // <-- con guión
+
+export const listFees = (params) =>
+  api.get("fees/", { params }).then(r => r.data);
+
+export const listMyFees = () =>
+  api.get("me/fees/").then(r => r.data);
+
+export const issueFees = (payload) =>
+  api.post("fees/issue/", payload).then(r => r.data);
+
+export const payFee = (id, payload) =>
+  api.post(`fees/${id}/pay/`, payload).then(r => r.data);

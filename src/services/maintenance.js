@@ -12,3 +12,7 @@ export const createMaintenanceRequest = (payload) =>
 // Actualiza el estado de una solicitud (para admins)
 export const updateMaintenanceRequest = (id, payload) =>
   api.patch(`maintenance-requests/${id}/`, payload).then((r) => r.data);
+
+// Al final de src/services/maintenance.js
+export const updateMaintenanceRequestStatus = (id, status) =>
+  api.patch(`maintenance-requests/${id}/update_status/`, { status });

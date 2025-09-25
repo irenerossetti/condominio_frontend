@@ -10,6 +10,12 @@ export async function login(arg1, arg2) {
   return data;
 }
 
+// 👈 Función de logout que llama al backend
+export async function logout() {
+  await api.post("auth/logout/");
+  clearSession();
+}
+
 export function clearSession() {
   localStorage.removeItem("access");
 }

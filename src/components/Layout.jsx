@@ -1,15 +1,38 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom"; // <-- Asegúrate de que useLocation está aquí
 import { fetchMe } from "../services/me";
+import { logPageAccess } from "../services/log";
 import LogoutButton from "./LogoutButton";
+
+// Mapea las rutas a un nombre legible
+const pageMap = {
+  "/dashboard": "Dashboard",
+  "/my-account": "Mi Cuenta",
+  "/notices": "Avisos",
+  "/fees": "Cuotas",
+  "/reservations": "Reservas",
+  "/maintenance": "Mantenimiento",
+  "/users": "Usuarios",
+  "/units": "Unidades",
+  "/reports": "Reportes",
+  "/activity-log": "Bitácora de Actividad",
+};
 
 export default function Layout() {
   const [me, setMe] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation(); // 👈 Obtiene el objeto de ubicación
 
   useEffect(() => {
     fetchMe().then(setMe).catch(() => navigate("/login", { replace: true }));
   }, [navigate]);
+
+  // 👈 Nuevo useEffect para registrar la visita a la página
+  useEffect(() => {
+    const pageName = pageMap[location.pathname] || location.pathname;
+    logPageAccess(pageName)
+      .catch(err => console.error("Error al registrar acceso a página:", err));
+  }, [location.pathname]); // El efecto se ejecuta cada vez que cambia la ruta
 
   const isAdmin = me?.profile?.role === "ADMIN";
   const s = ({ isActive }) => "s-navlink" + (isActive ? " active" : "");
@@ -39,6 +62,7 @@ export default function Layout() {
               <NavLink to="/users" className={s}>👥 Usuarios</NavLink>
               <NavLink to="/units" className={s}>🏢 Unidades</NavLink>
               <NavLink to="/reports" className={s}>📄 Reportes</NavLink>
+              <NavLink to="/activity-log" className={s}>📋 Bitácora</NavLink>
             </>
           )}
         </nav>

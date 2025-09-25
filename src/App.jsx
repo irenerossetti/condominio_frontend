@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Protected from "./components/Protected.jsx";
 import AdminRoute from "./components/AdminRoute.jsx";
 import Layout from "./components/Layout.jsx";
-
+import ActivityLog from "./pages/ActivityLog.jsx"; // Importa
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import MyAccount from "./pages/MyAccount.jsx";
@@ -26,6 +26,7 @@ export default function App() {
         {/* protegidas (requiere sesión) */}
         <Route element={<Protected />}>
           {/* layout con el menú */}
+          <Route path="/activity-log" element={<ActivityLog />} />
           <Route element={<Layout />}>
             <Route element={<Layout />}></Route>
             <Route index element={<Navigate to="/dashboard" replace />} />

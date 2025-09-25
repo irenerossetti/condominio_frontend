@@ -10,11 +10,12 @@ import Dashboard from "./pages/Dashboard.jsx";
 import MyAccount from "./pages/MyAccount.jsx";
 import Notices from "./pages/Notices.jsx";
 import Fees from "./pages/Fees.jsx";
-
+import Maintenance from "./pages/Maintenance.jsx";
 import Users from "./pages/Users.jsx";
 import Units from "./pages/Units.jsx";
 import Reports from "./pages/Reports.jsx";
 
+import Reservations from "./pages/Reservations.jsx"; // <-- Importa
 export default function App() {
   return (
     <BrowserRouter>
@@ -32,12 +33,13 @@ export default function App() {
             <Route path="/my-account" element={<MyAccount />} />
             <Route path="/notices" element={<Notices />} />
             <Route path="/fees" element={<Fees />} />
-
+            <Route path="/maintenance" element={<Maintenance />} />
             {/* solo admin */}
             <Route element={<AdminRoute />}>
               <Route path="/users" element={<Users />} />
               <Route path="/units" element={<Units />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/reservations" element={<Reservations />} />
             </Route>
           </Route>
         </Route>

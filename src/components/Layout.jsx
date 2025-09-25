@@ -30,6 +30,10 @@ export default function Layout() {
           <NavLink to="/my-account" className={s}>👤 Mi cuenta</NavLink>
           <NavLink to="/notices" className={s}>🔔 Avisos</NavLink>
           <NavLink to="/fees" className={s}>💳 Cuotas</NavLink>
+          <NavLink to="/reservations" className={s}>📅 Reservas</NavLink>
+          {/* --- LÍNEA AÑADIDA --- */}
+          <NavLink to="/maintenance" className={s}>🛠️ Mantenimiento</NavLink>
+          
           {isAdmin && (
             <>
               <NavLink to="/users" className={s}>👥 Usuarios</NavLink>

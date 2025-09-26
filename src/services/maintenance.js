@@ -16,3 +16,10 @@ export const updateMaintenanceRequest = (id, payload) =>
 // Al final de src/services/maintenance.js
 export const updateMaintenanceRequestStatus = (id, status) =>
   api.patch(`maintenance-requests/${id}/update_status/`, { status });
+
+// 👈 Nuevas funciones para comentarios
+export const listMaintenanceRequestComments = (requestId) =>
+  api.get(`maintenance-request-comments/?request=${requestId}`).then((r) => r.data);
+
+export const createMaintenanceRequestComment = (payload) =>
+  api.post("maintenance-request-comments/", payload).then((r) => r.data);

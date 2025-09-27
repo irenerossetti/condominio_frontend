@@ -279,3 +279,59 @@ button:active{ transform:translateY(1px); }
 .profile-menu button:hover {
   background: var(--silver-500);
 }
+/* Estilos para las tarjetas de "Mi Cuenta" */
+.my-account-card {
+    padding: 20px;
+    border: 1px solid var(--silver-200);
+    border-radius: 14px; /* Un poco más redondeado para modernidad */
+    background-color: #fff;
+    box-shadow: var(--shadow); /* Usamos la variable de sombra global */
+    display: grid; /* Para que los elementos internos también se organicen mejor */
+}
+
+.my-account-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text);
+    font-size: 1.3em;
+}
+
+.my-account-card h4 {
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-size: 1.1em;
+}
+
+/* Estilos para la disposición en columnas de los formularios */
+.form-columns {
+    margin-top: 24px; /* Espacio superior para separar de la sección anterior */
+    display: grid;
+    gap: 24px; /* Espacio entre las columnas */
+    grid-template-columns: 1fr; /* Por defecto, una sola columna para móviles */
+}
+
+/* Media query para pantallas más grandes: 2 columnas */
+@media (min-width: 768px) { /* A partir de 768px de ancho, las columnas */
+    .form-columns {
+        grid-template-columns: 1fr 1fr; /* Dos columnas de igual ancho */
+    }
+}
+
+/* Ajustes para inputs y selects dentro de los formularios */
+.my-account-card input[type="text"],
+.my-account-card input[type="password"],
+.my-account-card select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--silver-300);
+    border-radius: 8px;
+    margin-top: 4px; /* Espacio entre el label y el input */
+    font-size: 1em;
+}
+
+.my-account-card label {
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: 0.95em;
+}

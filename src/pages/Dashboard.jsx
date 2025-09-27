@@ -7,7 +7,7 @@ import { listMyFees } from "../services/fees";
 import { listMaintenanceRequests } from "../services/maintenance";
 import FeesChart from '../components/FeesChart';
 import { financeReport } from "../services/reports"; // 👈 Importa este servicio
-
+import { fetchMe } from "../services/me"; // 👈 Asegúrate de que este import esté
 // --- Pequeña función para formatear fechas relativas ---
 function formatRelativeTime(dateString) {
   if (!dateString) return '';
@@ -49,24 +49,38 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [statsData, noticesData, feesData, maintenanceData, reportData] = await Promise.all([
-          getDashboardStats(),
-          listNotices({ limit: 5 }), // Pedimos solo los 5 más recientes
-          listMyFees(),
-          listMaintenanceRequests(),
-          financeReport()
-        ]);
+        const me = await fetchMe();
+        const isAdmin = me?.profile?.role === 'ADMIN';
 
-        setStats(statsData);
-        setReport(reportData); // 👈 Guarda los datos del reporte
-        // --- Unifica los datos en un solo feed de actividad ---
+        // Prepara las peticiones a la API
+        const promises = [
+          listNotices({ limit: 5 }),
+          listMyFees(),
+          listMaintenanceRequests()
+        ];
+        
+        // Solo añade la petición de estadísticas si es admin
+        if (isAdmin) {
+          promises.unshift(getDashboardStats()); // .unshift() la añade al principio
+        } else {
+          promises.unshift(Promise.resolve(null)); // Añade un valor nulo para no romper el orden
+        }
+
+        // Ejecuta todas las peticiones en paralelo
+        const [statsData, noticesData, feesData, maintenanceData] = await Promise.all(promises);
+
+        if (isAdmin) {
+          setStats(statsData);
+        }
+
+        // El resto de la lógica sigue igual...
         const notices = (noticesData.results || []).map(item => ({
           id: `n-${item.id}`,
           icon: '🔔',
           title: item.title,
           detail: `Por ${item.created_by_username}`,
           status: 'Información',
-          date: new Date(item.published_at)
+          date: new Date(item.publish_date)
         }));
 
         const fees = (feesData.results || []).filter(f => f.status !== 'PAID').map(item => ({
@@ -101,7 +115,6 @@ export default function Dashboard() {
     }
     loadDashboardData();
   }, []);
-
   if (loading) {
     return (
       <div>

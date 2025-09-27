@@ -133,3 +133,73 @@ button:active{ transform:translateY(1px); }
 }
 .count-chip{ display:inline-grid; grid-auto-flow:column; gap:6px; align-items:center; padding:8px 10px;
   border-radius:12px; background:#f6faf5; border:1px solid #e7efe4; color:var(--silver-700); }
+
+  /* ... (todo tu CSS existente) ... */
+
+/* --- 👇 AÑADE ESTOS ESTILOS AL FINAL --- */
+
+.quick-action-link {
+  text-align: left;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  background: #fff;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 14px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.quick-action-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.quick-action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  font-size: 20px;
+  font-weight: 700;
+}
+.activity-item {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--silver-100);
+  border-radius: 12px;
+  background: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.activity-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: #e5e7eb;
+  border-radius: 12px;
+}
+.skeleton-text {
+    height: 1.25rem;
+    width: 80%;
+}
+.skeleton-title {
+    height: 2rem;
+    width: 50%;
+    margin-bottom: 1rem;
+}

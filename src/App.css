@@ -203,3 +203,79 @@ button:active{ transform:translateY(1px); }
     width: 50%;
     margin-bottom: 1rem;
 }
+/* ... (todos tus estilos existentes) ... */
+
+/* --- Estilos para el Menú de Perfil Desplegable --- */
+.sidebar-footer {
+  position: relative; /* Necesario para posicionar el menú */
+}
+
+.profile-trigger {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-trigger:hover {
+  background-color: var(--silver-100);
+}
+
+.profile-trigger-arrow {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.profile-menu {
+  position: absolute;
+  bottom: 105%; /* Posiciona el menú justo encima del botón */
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--silver-300);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 8px;
+  z-index: 10;
+  display: grid;
+  gap: 4px;
+}
+
+.profile-menu-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.profile-menu-item:hover {
+  background-color: var(--silver-100);
+}
+
+.profile-menu-separator {
+  height: 1px;
+  background-color: var(--silver-100);
+  margin: 4px 0;
+}
+
+/* El botón de logout dentro del menú necesita ajustes */
+.profile-menu button {
+  width: 100%;
+  box-shadow: none; /* Quita la sombra para un look más limpio dentro del menú */
+  font-weight: 500;
+  background: var(--silver-700);
+}
+
+.profile-menu button:hover {
+  background: var(--silver-500);
+}

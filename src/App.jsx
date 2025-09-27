@@ -14,11 +14,13 @@ import Maintenance from "./pages/Maintenance.jsx";
 import Users from "./pages/Users.jsx";
 import Units from "./pages/Units.jsx";
 import Reports from "./pages/Reports.jsx";
-
+import { Toaster } from 'react-hot-toast';
 import Reservations from "./pages/Reservations.jsx"; // <-- Importa
+
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="bottom-center" /> {/* <-- Añade esto */}
       <Routes>
         {/* pública */}
         <Route path="/login" element={<Login />} />

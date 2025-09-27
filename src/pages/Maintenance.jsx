@@ -1,13 +1,15 @@
-// src/pages/Maintenance.jsx
 import { useEffect, useState } from "react";
 import {
   listMaintenanceRequests,
   createMaintenanceRequest,
   updateMaintenanceRequestStatus,
-  listMaintenanceRequestComments, // 👈 Nuevo: Importa el servicio de comentarios
-  createMaintenanceRequestComment, // 👈 Nuevo: Importa la función para crear comentarios
+  listMaintenanceRequestComments,
+  createMaintenanceRequestComment,
+  updateMaintenanceRequest,
 } from "../services/maintenance";
 import { fetchMe } from "../services/me";
+import { listStaffUsers } from "../services/users";
+import { toast } from "react-hot-toast";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -21,24 +23,31 @@ const StatusBadge = ({ status }) => {
 export default function Maintenance() {
   const [me, setMe] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [form, setForm] = useState({ title: "", description: "" });
-  const [msg, setMsg] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState(null); // 👈 Nuevo: Para ver detalles
-  const [comments, setComments] = useState([]); // 👈 Nuevo: Para los comentarios de la solicitud
-  const [commentForm, setCommentForm] = useState({ body: "" }); // 👈 Nuevo: Para el formulario de comentarios
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentForm, setCommentForm] = useState({ body: "" });
 
   const isAdmin = me?.profile?.role === "ADMIN";
 
   async function loadData() {
     try {
-      const [meData, requestsData] = await Promise.all([
-        fetchMe(),
-        listMaintenanceRequests()
-      ]);
+      const fetchPromises = [fetchMe(), listMaintenanceRequests()];
+      // Solo pedimos la lista de personal si es un admin
+      if (me?.profile?.role === "ADMIN") {
+        fetchPromises.push(listStaffUsers());
+      }
+      
+      const [meData, requestsData, staffData] = await Promise.all(fetchPromises);
+      
       setMe(meData);
       setRequests(requestsData.results || requestsData);
+      if (staffData) {
+        setStaff(staffData);
+      }
     } catch (err) {
-      setMsg("Error al cargar los datos.");
+      toast.error("Error al cargar los datos de mantenimiento.");
       console.error(err);
     }
   }
@@ -52,9 +61,17 @@ export default function Maintenance() {
     }
   }
   
+  // Usamos un solo useEffect para cargar los datos basado en 'me'
   useEffect(() => {
-    loadData();
+    fetchMe().then(userData => {
+        setMe(userData);
+    });
   }, []);
+  
+  useEffect(() => {
+    // Carga los datos una vez que sabemos quién es el usuario
+    if(me) loadData();
+  }, [me]);
 
   useEffect(() => {
     if (selectedRequest) {
@@ -64,25 +81,33 @@ export default function Maintenance() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    setMsg("");
     try {
       await createMaintenanceRequest(form);
-      setMsg("Solicitud enviada con éxito.");
+      toast.success("Solicitud enviada con éxito.");
       setForm({ title: "", description: "" });
       loadData();
     } catch (err) {
-      setMsg("No se pudo enviar la solicitud.");
-      console.error(err);
+      toast.error("No se pudo enviar la solicitud.");
     }
   }
   
   const handleStatusChange = async (id, newStatus) => {
     try {
       await updateMaintenanceRequestStatus(id, newStatus);
+      toast.success("Estado actualizado.");
       loadData();
     } catch (error) {
-      console.error("Error updating status:", error);
-      alert("No se pudo actualizar el estado.");
+      toast.error("No se pudo actualizar el estado.");
+    }
+  };
+
+  const handleAssignWorker = async (requestId, workerId) => {
+    try {
+      await updateMaintenanceRequest(requestId, { assigned_to: workerId || null });
+      toast.success("Trabajador asignado.");
+      loadData();
+    } catch (error) {
+      toast.error("No se pudo asignar el trabajador.");
     }
   };
 
@@ -95,10 +120,9 @@ export default function Maintenance() {
         body: commentForm.body,
       });
       setCommentForm({ body: "" });
-      loadComments(selectedRequest.id); // Recargar comentarios
+      loadComments(selectedRequest.id);
     } catch (error) {
-      console.error("Error creating comment:", error);
-      alert("No se pudo agregar el comentario.");
+      toast.error("No se pudo agregar el comentario.");
     }
   };
 
@@ -106,7 +130,7 @@ export default function Maintenance() {
     <div style={{ padding: 24, display: "grid", gap: 24 }}>
       <h1>Mantenimiento y Soporte</h1>
 
-      {/* Formulario para residentes */}
+      {/* 👇 CÓDIGO DEL FORMULARIO PARA RESIDENTES RESTAURADO Y CORREGIDO */}
       {!isAdmin && (
         <section className="card">
           <h3>Reportar un Incidente</h3>
@@ -125,70 +149,82 @@ export default function Maintenance() {
               required
             />
             <button type="submit">Enviar Reporte</button>
-            {msg && <p style={{ color: msg.includes("Error") ? "red" : "#0a7" }}>{msg}</p>}
+            {/* La línea que usaba 'msg' ha sido eliminada */}
           </form>
         </section>
       )}
 
       <section>
         <h3>{isAdmin ? "Todas las Solicitudes" : "Mis Solicitudes"}</h3>
-        <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#f4f4f4" }}>
-              <th>Título</th>
+        <table className="table">
+            {/* ... el resto de la tabla se queda igual ... */}
+            <thead>
+            <tr>
+              <th>Título / Asignado a</th>
               {isAdmin && <th>Reportado por</th>}
               <th>Estado</th>
-              <th>Fecha de Reporte</th>
-              <th></th> {/* 👈 Nueva columna para el botón de detalles */}
-              {isAdmin && <th>Acciones</th>}
+              <th>Fecha</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {requests.map((req) => (
-              <tr key={req.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{req.title}</td>
+              <tr key={req.id}>
+                <td>
+                  <div style={{ fontWeight: 'bold' }}>{req.title}</div>
+                  <div style={{ fontSize: '12px', color: 'gray' }}>
+                    Asignado a: {req.assigned_to_username || 'Nadie'}
+                  </div>
+                </td>
                 {isAdmin && <td>{req.reported_by_username}</td>}
                 <td><StatusBadge status={req.status} /></td>
-                <td>{new Date(req.created_at).toLocaleString()}</td>
+                <td>{new Date(req.created_at).toLocaleDateString()}</td>
                 <td>
-                  <button onClick={() => setSelectedRequest(req)}>Ver detalles</button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button onClick={() => setSelectedRequest(req)}>Ver detalles</button>
+                    {isAdmin && (
+                      <>
+                        <select
+                          value={req.status}
+                          onChange={(e) => handleStatusChange(req.id, e.target.value)}
+                        >
+                          <option value="PENDING">Pendiente</option>
+                          <option value="IN_PROGRESS">En Progreso</option>
+                          <option value="COMPLETED">Completado</option>
+                        </select>
+                        <select
+                          value={req.assigned_to || ''}
+                          onChange={(e) => handleAssignWorker(req.id, e.target.value)}
+                        >
+                          <option value="">-- Asignar a --</option>
+                          {staff.map(s => (
+                            <option key={s.id} value={s.id}>{s.username}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
                 </td>
-                {isAdmin && (
-                  <td>
-                    <select
-                      value={req.status}
-                      onChange={(e) => handleStatusChange(req.id, e.target.value)}
-                    >
-                      <option value="PENDING">Pendiente</option>
-                      <option value="IN_PROGRESS">En Progreso</option>
-                      <option value="COMPLETED">Completado</option>
-                    </select>
-                  </td>
-                )}
               </tr>
             ))}
             {!requests.length && (
-              <tr>
-                <td colSpan={isAdmin ? 6 : 4}>No hay solicitudes.</td>
-              </tr>
+              <tr><td colSpan={isAdmin ? 5 : 4}>No hay solicitudes.</td></tr>
             )}
           </tbody>
         </table>
       </section>
 
-      {/* 👈 Nuevo: Modal para ver detalles y comentarios */}
       {selectedRequest && (
-        <div className="card" style={{ maxWidth: 600, justifySelf: "center" }}>
+        <div className="card" style={{ maxWidth: 600, justifySelf: "center", marginTop: '16px' }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3>Detalles de la Solicitud: {selectedRequest.title}</h3>
+            <h3>Detalles de: {selectedRequest.title}</h3>
             <button onClick={() => setSelectedRequest(null)}>Cerrar</button>
           </div>
           <p><b>Descripción:</b> {selectedRequest.description}</p>
           <p><b>Reportado por:</b> {selectedRequest.reported_by_username}</p>
+          <p><b>Asignado a:</b> {selectedRequest.assigned_to_username || 'Nadie'}</p>
           <p><b>Estado:</b> <StatusBadge status={selectedRequest.status} /></p>
-
           <hr style={{ margin: "16px 0" }} />
-
           <h4>Comentarios</h4>
           <div style={{ maxHeight: 200, overflowY: "auto", display: "grid", gap: 12 }}>
             {comments.map((c) => (
@@ -202,7 +238,6 @@ export default function Maintenance() {
             ))}
             {!comments.length && <p>No hay comentarios aún.</p>}
           </div>
-
           <form onSubmit={handleCommentSubmit} style={{ display: "flex", gap: 8, marginTop: 16 }}>
             <textarea
               placeholder="Añadir un comentario..."

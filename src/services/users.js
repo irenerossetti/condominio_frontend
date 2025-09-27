@@ -21,3 +21,7 @@ export async function updateUser(id, payload) {
 export async function deleteUser(id) {
   await api.delete(`users/${id}/`);
 }
+export async function listStaffUsers() {
+  const { data } = await api.get("users/staff_members/");
+  return data;
+}

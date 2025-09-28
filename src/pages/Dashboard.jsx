@@ -1,14 +1,13 @@
-// src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats } from "../services/reports";
 import { listNotices } from "../services/notices";
 import { listMyFees } from "../services/fees";
 import { listMaintenanceRequests } from "../services/maintenance";
-import FeesChart from '../components/FeesChart';
-import { financeReport } from "../services/reports"; // 👈 Importa este servicio
-import { fetchMe } from "../services/me"; // 👈 Asegúrate de que este import esté
-// --- Pequeña función para formatear fechas relativas ---
+import { fetchMe } from "../services/me";
+// import FeesChart from '../components/FeesChart'; // Descomenta esto si creas el componente de gráfico
+// import { financeReport } from "../services/reports";
+
 function formatRelativeTime(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -24,7 +23,6 @@ function formatRelativeTime(dateString) {
   return `Hace ${days} días`;
 }
 
-// --- Componente para las "Acciones Rápidas" con descripción ---
 function QuickAction({ icon, title, desc, to }) {
   return (
     <Link to={to} className="quick-action-link">
@@ -37,50 +35,46 @@ function QuickAction({ icon, title, desc, to }) {
   );
 }
 
-
 export default function Dashboard() {
-  // --- Estados para almacenar los datos de la API ---
   const [stats, setStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [report, setReport] = useState(null); // 👈 Nuevo estado para el reporte
-  
-  // --- Hook para cargar todos los datos cuando el componente se monta ---
+  // const [report, setReport] = useState(null);
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
         const me = await fetchMe();
         const isAdmin = me?.profile?.role === 'ADMIN';
 
-        // Prepara las peticiones a la API
         const promises = [
           listNotices({ limit: 5 }),
           listMyFees(),
-          listMaintenanceRequests()
+          listMaintenanceRequests(),
+          // isAdmin ? financeReport() : Promise.resolve(null) // Carga el reporte solo si es admin
         ];
         
-        // Solo añade la petición de estadísticas si es admin
         if (isAdmin) {
-          promises.unshift(getDashboardStats()); // .unshift() la añade al principio
+          promises.unshift(getDashboardStats());
         } else {
-          promises.unshift(Promise.resolve(null)); // Añade un valor nulo para no romper el orden
+          promises.unshift(Promise.resolve(null));
         }
 
-        // Ejecuta todas las peticiones en paralelo
         const [statsData, noticesData, feesData, maintenanceData] = await Promise.all(promises);
 
         if (isAdmin) {
           setStats(statsData);
+          // setReport(reportData);
         }
 
-        // El resto de la lógica sigue igual...
         const notices = (noticesData.results || []).map(item => ({
           id: `n-${item.id}`,
           icon: '🔔',
           title: item.title,
           detail: `Por ${item.created_by_username}`,
           status: 'Información',
-          date: new Date(item.publish_date)
+          date: new Date(item.publish_date),
+          link: '/notices'
         }));
 
         const fees = (feesData.results || []).filter(f => f.status !== 'PAID').map(item => ({
@@ -89,7 +83,8 @@ export default function Dashboard() {
           title: `Cuota Vencida (${item.expense_type_name || 'General'})`,
           detail: `Monto: $${Number(item.amount).toFixed(2)}`,
           status: item.status,
-          date: new Date(item.issued_at)
+          date: new Date(item.issued_at),
+          link: '/fees'
         }));
 
         const maintenance = (maintenanceData.results || []).filter(r => r.status !== 'COMPLETED').map(item => ({
@@ -98,7 +93,8 @@ export default function Dashboard() {
           title: item.title,
           detail: `Reportado por ${item.reported_by_username}`,
           status: item.status,
-          date: new Date(item.created_at)
+          date: new Date(item.created_at),
+          link: '/maintenance'
         }));
 
         const combined = [...notices, ...fees, ...maintenance]
@@ -106,7 +102,6 @@ export default function Dashboard() {
           .slice(0, 5);
         
         setRecentActivity(combined);
-
       } catch (error) {
         console.error("Error al cargar el dashboard:", error);
       } finally {
@@ -115,6 +110,7 @@ export default function Dashboard() {
     }
     loadDashboardData();
   }, []);
+
   if (loading) {
     return (
       <div>
@@ -132,14 +128,13 @@ export default function Dashboard() {
         </section>
       </div>
     );
-}
+  }
 
   return (
     <div>
       <h1>Dashboard</h1>
       <p className="muted">Bienvenido al sistema de gestión Smart Condominium</p>
 
-      {/* --- KPIs dinámicos --- */}
       <section className="kpis" style={{ marginTop: 12 }}>
         <div className="kpi">
           <h4> Total Usuarios </h4>
@@ -160,7 +155,6 @@ export default function Dashboard() {
       </section>
 
       <section className="columns" style={{ marginTop: 16 }}>
-        {/* --- "Acciones Rápidas" como enlaces con descripción --- */}
         <div className="section">
           <h3>Acciones Rápidas</h3>
           <div className="grid-1" style={{ display: "grid", gap: 12 }}>
@@ -175,33 +169,30 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* --- "Actividad Reciente" dinámica y con estilos --- */}
         <div className="section">
           <h3>Actividad Reciente</h3>
           <div style={{ display: "grid", gap: 12 }}>
             {recentActivity.length > 0 ? recentActivity.map((a) => (
-              <div key={a.id} className="activity-item">
-                <div className="quick-action-icon" style={{width: 36, height: 36}}>
-                  {a.icon}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{a.title}{" "}
-                    <span className={`badge ${a.status === 'Información' ? 'gray' : 'warn'}`} style={{ marginLeft: 6 }}>
-                      {a.status}
-                    </span>
+              <Link to={a.link} key={a.id} className="activity-item-link">
+                <div className="activity-item">
+                  <div className="quick-action-icon" style={{width: 36, height: 36}}>
+                    {a.icon}
                   </div>
-                  <div className="muted">{a.detail}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>⏰ {formatRelativeTime(a.date)}</div>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{a.title}{" "}
+                      <span className={`badge ${a.status === 'Información' ? 'gray' : 'warn'}`} style={{ marginLeft: 6 }}>
+                        {a.status}
+                      </span>
+                    </div>
+                    <div className="muted">{a.detail}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>⏰ {formatRelativeTime(a.date)}</div>
+                  </div>
+                  <div style={{ opacity: .4 }}>⋮</div>
                 </div>
-                <div style={{ opacity: .4 }}>⋮</div>
-              </div>
+              </Link>
             )) : <p>No hay actividad reciente.</p>}
           </div>
         </div>
-      </section>
-      {/* 👇 AÑADE ESTA NUEVA SECCIÓN AL FINAL, ANTES DEL ÚLTIMO </div> */}
-      <section className="card" style={{ marginTop: 16 }}>
-        <FeesChart reportData={report} />
       </section>
     </div>
   );

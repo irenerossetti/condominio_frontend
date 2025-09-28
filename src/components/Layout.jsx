@@ -6,6 +6,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { fetchMe } from "../services/me";
 import { logPageAccess } from "../services/log";
 import LogoutButton from "./LogoutButton";
+import NotificationBell from './NotificationBell'; // 👈 Importa el nuevo componente
 
 const pageMap = {
   "/dashboard": "Dashboard",
@@ -114,7 +115,8 @@ export default function Layout() {
       <main className="content">
         <header className="topbar">
           <div className="app-title">🌿 Gestión Ecológica e Inteligente</div>
-          <div style={{ opacity: .6 }}>🔔</div>
+          {/* 👇 Reemplaza el <div> con el componente de la campana */}
+          <NotificationBell />
         </header>
 
         <div className="app-main">

@@ -48,11 +48,11 @@ export default function ActivityLog() {
       setCurrentPage(Number(newPage));
       loadData(newPage);
     }
-    else {
+ //   else {
       // Manejar el caso de la primera página
-      setCurrentPage(1);
-      loadData(1);
-    }
+  //    setCurrentPage(1);
+  //    loadData(1);
+   // }
   };
 
 
